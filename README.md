@@ -100,6 +100,25 @@ kubectl port-forward svc/taskflow-api 8080:80 -n taskflow-dev
 ```
 lalu akses http://localhost:8080
 
+## Bagian 3
+### Laporan Pengujian Insiden 1 — Self-Healing
+
+### Analisis Masalah Lama (Insiden 1)
+Pada arsitektur monolitik lama, aplikasi TaskFlow dijalankan secara manual di satu container server tunggal. Ketika container mengalami crash pada pukul 02.15 malam, sistem tidak memiliki kecerdasan untuk mendeteksi maupun memulihkan diri, sehingga mengakibatkan downtime fatal selama lebih dari 6 jam hingga tim operasional masuk kerja di pagi hari.
+
+### Solusi Kubernetes: Self-Healing via ReplicaSet
+Melalui objek **Deployment** yang dikonfigurasi dengan `replicas: 2` di namespace `taskflow-prod`, Kubernetes Control Plane secara konstan menjalankan siklus rekonsiliasi (*reconciliation loop*). Jika salah satu Pod terdeteksi mati atau dihapus, Kubernetes akan mendeteksi ketidaksesuaian jumlah *state* saat itu dengan manifes, lalu secara instan menjadwalkan pembuatan Pod baru untuk mempertahankan ketersediaan layanan.
+
+### Hasil Pengujian Simulasi
+<img width="772" height="108" alt="image" src="https://github.com/user-attachments/assets/27a37c5a-57e4-4cd3-a000-b47115fe5d69" />
+
+
+### 1. Eksekusi Penghapusan Pod (Simulasi Container Crash)
+```bash
+kubectl delete pod taskflow-api-5c8ccc8c55-95rjv -n taskflow-prod
+```
+<img width="1026" height="137" alt="image" src="https://github.com/user-attachments/assets/6031468e-c505-4f73-9439-88b703c99507" />
+<img width="797" height="307" alt="image" src="https://github.com/user-attachments/assets/f6942780-8b38-4ab5-a6bd-8d8a57250e6d" />
 
 ## **Dokumentasi**
 
