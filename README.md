@@ -103,17 +103,18 @@ lalu akses http://localhost:8080
 
 ## **Dokumentasi**
 
+
 **Validate YAML**
-![alt text](<Screenshot 2026-05-26 165925.png>)
+![alt text](<Screenshot/Screenshot 2026-05-26 165925.png>)
 
 **Check Pod & Check Service**
-![alt text](<Screenshot 2026-05-26 165708.png>)
+![alt text](<Screenshot/Screenshot 2026-05-26 165708.png>)
 
 **Test Akses**
-![alt text](<Screenshot 2026-05-26 165755.png>)
+![alt text](<Screenshot/Screenshot 2026-05-26 165755.png>)
 
 **Deploy**
-![alt text](<Screenshot 2026-05-26 165849.png>)
+![alt text](<Screenshot/Screenshot 2026-05-26 165849.png>)
 
 
 
