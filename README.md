@@ -136,4 +136,160 @@ kubectl delete pod taskflow-api-5c8ccc8c55-95rjv -n taskflow-prod
 ![alt text](<Screenshot/Screenshot 2026-05-26 165849.png>)
 
 
+## Bagian 4
+### Analisis Masalah Lama (Insiden 2)
 
+Pada arsitektur lama, TaskFlow Inc. melakukan deployment secara manual menggunakan perintah Docker langsung di server produksi. Ketika versi baru perlu di-deploy, seluruh container harus dihentikan terlebih dahulu sebelum image baru dapat dijalankan.
+
+### Solusi Kubernetes: Rolling Update Strategy
+Kubernetes menyediakan mekanisme **Rolling Update** yang memungkinkan pembaruan aplikasi berjalan secara bertahap tanpa downtime. Kunci konfigurasinya adalah `maxUnavailable: 0` yang memastikan Pod lama tidak dimatikan sebelum Pod baru benar-benar siap melayani traffic.
+
+### Konfigurasi Strategy pada `deployment-prod.yaml`
+
+```yaml
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Boleh buat 1 Pod ekstra sementara
+      maxUnavailable: 0  # Jangan matikan Pod lama sebelum yang baru siap
+  selector:
+    matchLabels:
+      app: taskflow-api
+  template:
+    metadata:
+      labels:
+        app: taskflow-api
+    spec:
+      containers:
+        - name: taskflow-api
+          image: hashicorp/http-echo:latest
+          args:
+            - "-text=Halo dari TaskFlow API (PROD) v2! Fitur Baru!"
+            - "-listen=:8080"
+          ports:
+            - containerPort: 8080
+```
+
+### Alur Proses Rolling Update
+
+```
+Awal:    [Pod v1] [Pod v1] [Pod v1]
+Step 1:  [Pod v1] [Pod v1] [Pod v1] [Pod v2]  <- buat Pod baru dulu
+Step 2:  [Pod v1] [Pod v1] [Pod v2]           <- Pod v2 siap, matikan Pod v1
+Step 3:  [Pod v1] [Pod v2] [Pod v2] [Pod v2]  <- lanjut ke Pod v1 berikutnya
+Selesai: [Pod v2] [Pod v2] [Pod v2]           <- semua sudah versi baru
+```
+
+Traffic tidak pernah terhenti karena selalu ada minimal 3 Pod aktif yang melayani request selama proses update berlangsung.
+
+---
+
+### Langkah-Langkah Pengujian
+
+#### 1. Persiapan Cluster
+
+```powershell
+# Start minikube
+minikube start --cpus=2 --memory=4096 --driver=docker
+
+# Validate YAML sebelum apply
+kubectl apply -f deployment-prod.yaml --dry-run=client
+
+# Deploy namespace, deployment, dan service
+kubectl apply -f namespace-prod.yaml
+kubectl apply -f deployment-prod.yaml
+kubectl apply -f service-prod.yaml
+
+# Verifikasi semua pod Running
+kubectl get pods -n taskflow-prod
+```
+
+#### 2. Terminal 1 — Port-Forward
+
+Port-forward dijalankan agar aplikasi dapat diakses melalui `localhost:8080`.
+
+```powershell
+kubectl port-forward svc/taskflow-api 8080:80 -n taskflow-prod
+
+# Output:
+# Forwarding from 127.0.0.1:8080 -> 8080
+# Forwarding from [::1]:8080 -> 8080
+```
+
+#### 3. Terminal 2 — Loop Request (Monitor Uptime)
+
+Loop request dikirim setiap 500ms untuk memantau apakah ada downtime selama update berlangsung.
+
+```powershell
+while ($true) {
+  try {
+    $status = (Invoke-WebRequest -Uri "http://localhost:8080" -UseBasicParsing).StatusCode
+    Write-Host "$(Get-Date -Format 'HH:mm:ss') — HTTP $status"
+  } catch {
+    Write-Host "$(Get-Date -Format 'HH:mm:ss') — ERROR: $_"
+  }
+  Start-Sleep -Milliseconds 500
+}
+```
+
+#### 4. Terminal 3 — Eksekusi Rolling Update
+
+File `deployment-prod.yaml` diedit untuk mengubah teks response dari `v1` ke `v2`, kemudian di-apply ke cluster.
+
+```powershell
+# Apply deployment versi baru
+kubectl apply -f deployment-prod.yaml
+
+# Pantau proses rollout
+kubectl rollout status deployment/taskflow-api -n taskflow-prod
+
+# Verifikasi pod setelah selesai
+kubectl get pods -n taskflow-prod
+```
+
+---
+
+### Hasil Pengujian
+
+#### 1. Loop Request HTTP 200 — Selama Rolling Update (Terminal 2)
+
+Selama proses rolling update berlangsung (20:07:14 — 20:07:29), seluruh request mendapat respons **HTTP 200** tanpa satu pun error. Ini membuktikan tidak ada downtime sama sekali.
+
+![Loop Request HTTP 200](Screenshot_2026-05-28_201020.png)
+> *Gambar 1 — Terminal 2: Semua request mendapat HTTP 200 selama rolling update berlangsung*
+
+---
+
+#### 2. Proses Rollout Berhasil (Terminal 3)
+
+Output `kubectl rollout status` menunjukkan proses update berjalan bertahap: replica lama di-terminate satu per satu setelah replica baru siap. Rollout selesai dalam **1–2 menit** dengan status `successfully rolled out`.
+
+```
+Waiting for deployment "taskflow-api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "taskflow-api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "taskflow-api" rollout to finish: 1 old replicas are pending termination...
+deployment "taskflow-api" successfully rolled out
+```
+
+![Rollout Status](Screenshot_2026-05-28_201048.png)
+> *Gambar 2 — Terminal 3: kubectl apply dan rollout status — deployment berhasil*
+
+---
+
+#### 3. Verifikasi Pod Setelah Update
+
+Setelah rollout selesai, `kubectl get pods` menunjukkan 3 Pod baru (hash `86c88dbf65`) dengan status `Running` dan umur 2–3 menit. Pod lama sudah tergantikan sepenuhnya oleh versi baru.
+
+```
+NAME                            READY   STATUS    RESTARTS   AGE
+taskflow-api-86c88dbf65-qz8jf   1/1     Running   0          2m43s
+taskflow-api-86c88dbf65-vf8x9   1/1     Running   0          2m50s
+taskflow-api-86c88dbf65-zz5d2   1/1     Running   0          2m46s
+```
+
+![Get Pods](Screenshot_2026-05-28_201143.png)
+> *Gambar 3 — kubectl get pods: 3 Pod baru Running setelah rolling update selesai*
+
+---
