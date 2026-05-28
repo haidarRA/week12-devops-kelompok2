@@ -40,6 +40,8 @@ minikube version
 kubectl version --client
 ```
 
+---
+
 ## Bagian 1 — Why Kubernetes?
 Masalah yang Diselesaikan
 Saat aplikasi skala besar:
@@ -64,6 +66,8 @@ Worker Nodes (Server yang jalankan app)
 Pods (Container di dalam node)
 ```
 Kubernetes memantau cluster dan membuat keputusan agar state sesuai dengan yang kamu definisikan di file YAML.
+
+---
 
 ## Check Bagian 2
 
@@ -100,6 +104,8 @@ kubectl port-forward svc/taskflow-api 8080:80 -n taskflow-dev
 ```
 lalu akses http://localhost:8080
 
+---
+
 ## Bagian 3
 ### Laporan Pengujian Insiden 1 — Self-Healing
 
@@ -135,6 +141,7 @@ kubectl delete pod taskflow-api-5c8ccc8c55-95rjv -n taskflow-prod
 **Deploy**
 ![alt text](<Screenshot/Screenshot 2026-05-26 165849.png>)
 
+---
 
 ## Bagian 4
 ### Analisis Masalah Lama (Insiden 2)
@@ -184,8 +191,6 @@ Selesai: [Pod v2] [Pod v2] [Pod v2]           <- semua sudah versi baru
 
 Traffic tidak pernah terhenti karena selalu ada minimal 3 Pod aktif yang melayani request selama proses update berlangsung.
 
----
-
 ### Langkah-Langkah Pengujian
 
 #### 1. Persiapan Cluster
@@ -210,13 +215,7 @@ kubectl get pods -n taskflow-prod
 
 Port-forward dijalankan agar aplikasi dapat diakses melalui `localhost:8080`.
 
-```powershell
-kubectl port-forward svc/taskflow-api 8080:80 -n taskflow-prod
-
-# Output:
-# Forwarding from 127.0.0.1:8080 -> 8080
-# Forwarding from [::1]:8080 -> 8080
-```
+![alt text](<Screenshot/Screenshot 2026-05-28 202627.png>)
 
 #### 3. Terminal 2 — Loop Request (Monitor Uptime)
 
@@ -249,47 +248,24 @@ kubectl rollout status deployment/taskflow-api -n taskflow-prod
 kubectl get pods -n taskflow-prod
 ```
 
----
-
 ### Hasil Pengujian
 
 #### 1. Loop Request HTTP 200 — Selama Rolling Update (Terminal 2)
 
 Selama proses rolling update berlangsung (20:07:14 — 20:07:29), seluruh request mendapat respons **HTTP 200** tanpa satu pun error. Ini membuktikan tidak ada downtime sama sekali.
 
-![Loop Request HTTP 200](Screenshot_2026-05-28_201020.png)
-> *Gambar 1 — Terminal 2: Semua request mendapat HTTP 200 selama rolling update berlangsung*
-
----
+![alt text](<Screenshot/Screenshot 2026-05-28 201020.png>)
 
 #### 2. Proses Rollout Berhasil (Terminal 3)
 
 Output `kubectl rollout status` menunjukkan proses update berjalan bertahap: replica lama di-terminate satu per satu setelah replica baru siap. Rollout selesai dalam **1–2 menit** dengan status `successfully rolled out`.
 
-```
-Waiting for deployment "taskflow-api" rollout to finish: 1 old replicas are pending termination...
-Waiting for deployment "taskflow-api" rollout to finish: 1 old replicas are pending termination...
-Waiting for deployment "taskflow-api" rollout to finish: 1 old replicas are pending termination...
-deployment "taskflow-api" successfully rolled out
-```
-
-![Rollout Status](Screenshot_2026-05-28_201048.png)
-> *Gambar 2 — Terminal 3: kubectl apply dan rollout status — deployment berhasil*
-
----
+![alt text](<Screenshot/Screenshot 2026-05-28 201048.png>)
 
 #### 3. Verifikasi Pod Setelah Update
 
 Setelah rollout selesai, `kubectl get pods` menunjukkan 3 Pod baru (hash `86c88dbf65`) dengan status `Running` dan umur 2–3 menit. Pod lama sudah tergantikan sepenuhnya oleh versi baru.
 
-```
-NAME                            READY   STATUS    RESTARTS   AGE
-taskflow-api-86c88dbf65-qz8jf   1/1     Running   0          2m43s
-taskflow-api-86c88dbf65-vf8x9   1/1     Running   0          2m50s
-taskflow-api-86c88dbf65-zz5d2   1/1     Running   0          2m46s
-```
-
-![Get Pods](Screenshot_2026-05-28_201143.png)
-> *Gambar 3 — kubectl get pods: 3 Pod baru Running setelah rolling update selesai*
+![alt text](<Screenshot/Screenshot 2026-05-28 201143.png>)
 
 ---
