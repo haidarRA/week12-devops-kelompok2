@@ -269,3 +269,124 @@ Setelah rollout selesai, `kubectl get pods` menunjukkan 3 Pod baru (hash `86c88d
 ![alt text](<Screenshot/Screenshot 2026-05-28 201143.png>)
 
 ---
+
+## Bagian 5
+### Laporan Pengujian Insiden 3 — Rollback Cepat
+
+### Analisis Masalah Lama (Insiden 3)
+
+Pada arsitektur lama, ketika versi baru TaskFlow memiliki bug kritis, rollback dilakukan secara manual. Tim harus SSH ke server production, menghentikan container bermasalah, menarik image versi lama, menjalankan ulang container, lalu memastikan konfigurasi port dan environment tetap sesuai. Proses ini memakan waktu sekitar **25 menit** dan memiliki risiko human error yang tinggi.
+
+### Solusi Kubernetes: Rollback via Deployment Revision
+
+Kubernetes menyimpan revision history pada Deployment. Setelah rolling update selesai, versi sebelumnya dapat dikembalikan dengan satu perintah:
+
+```bash
+kubectl rollout undo deployment/taskflow-api -n taskflow-prod
+```
+
+Pada `kubernetes/deployment-prod.yaml`, Deployment production menyimpan beberapa revisi terakhir:
+
+```yaml
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+```
+
+Dengan konfigurasi ini, Kubernetes tetap mempertahankan ReplicaSet lama yang diperlukan untuk rollback. Karena strategy masih menggunakan `maxUnavailable: 0`, proses rollback juga dilakukan bertahap agar service tetap tersedia.
+
+### Langkah-Langkah Pengujian
+
+#### 1. Cek Riwayat Deployment
+
+```bash
+kubectl rollout history deployment/taskflow-api -n taskflow-prod
+kubectl get pods -n taskflow-prod
+```
+
+Perintah ini memastikan Deployment sudah memiliki lebih dari satu revisi setelah proses rolling update pada Bagian 4.
+
+#### 2. Eksekusi Rollback
+
+```bash
+START=$(date +%s)
+kubectl rollout undo deployment/taskflow-api -n taskflow-prod
+```
+
+#### 3. Pantau Proses Rollback
+
+```bash
+kubectl rollout status deployment/taskflow-api -n taskflow-prod
+END=$(date +%s)
+echo "Durasi rollback: $((END-START)) detik"
+```
+
+#### 4. Verifikasi Setelah Rollback
+
+```bash
+kubectl get pods -n taskflow-prod
+kubectl rollout history deployment/taskflow-api -n taskflow-prod
+```
+
+Jika menggunakan port-forward seperti Bagian 4:
+
+```bash
+kubectl port-forward svc/taskflow-api 8080:80 -n taskflow-prod
+curl http://localhost:8080
+```
+
+### Hasil yang Diharapkan
+
+Rollback selesai dengan status `deployment "taskflow-api" successfully rolled out`. Pod versi baru diganti oleh Pod dari revisi sebelumnya secara bertahap, sehingga aplikasi tetap dapat diakses selama proses rollback.
+
+### Hasil Pengujian Rollback
+
+Rollback diuji dengan membuat revisi sementara `v3! BUG KRITIS!`, lalu menjalankan `kubectl rollout undo`. Proses rollback selesai dalam **10 detik** dan Deployment kembali ke response versi stabil:
+
+```text
+-text=Halo dari TaskFlow API (PROD) v2! Fitur Baru!
+```
+
+Command yang dijalankan:
+
+![Command Rollback Bagian 5](<Screenshot/rollback-bagian-5-warp-command.png>)
+
+Output pengujian rollback:
+
+![Output Rollback Bagian 5](<Screenshot/rollback-bagian-5-warp-output.png>)
+
+Status Pod setelah rollback menunjukkan 3 Pod versi stabil sudah `Running`, sementara 1 Pod dari revisi sebelumnya sedang `Terminating`:
+
+```text
+NAME                            READY   STATUS        RESTARTS   AGE
+taskflow-api-654f7d847c-bp5ll   1/1     Terminating   0          16s
+taskflow-api-89c95fd7b-c29qr    1/1     Running       0          10s
+taskflow-api-89c95fd7b-c2yqy    1/1     Running       0          4s
+taskflow-api-89c95fd7b-hbnkn    1/1     Running       0          7s
+```
+
+| Bukti | Hasil |
+| --- | --- |
+| Durasi rollback | 10 detik |
+| Status rollout | `deployment "taskflow-api" successfully rolled out` |
+| Status Pod | 3 Pod stabil `Running`, 1 Pod lama `Terminating` |
+
+### Tabel Perbandingan Rollback
+
+| Aspek | Cara Lama | Dengan Kubernetes |
+| --- | --- | --- |
+| Langkah | SSH → stop container → pull image lama → run ulang → config ulang | Satu perintah `kubectl rollout undo` |
+| Waktu | ~25 menit | < 60 detik |
+| Risiko | Tinggi karena banyak langkah manual | Rendah karena dikontrol Deployment |
+| Dampak layanan | Berpotensi downtime | Tetap tersedia melalui rolling rollback |
+
+### Kesimpulan
+
+Insiden 3 dapat dicegah karena Kubernetes menyediakan mekanisme rollback cepat berbasis revision history. Tim tidak perlu lagi melakukan pemulihan manual di server production; cukup menjalankan `kubectl rollout undo`, lalu Kubernetes mengembalikan Deployment ke revisi sebelumnya sambil menjaga jumlah Pod tetap tersedia.
+
+Dokumentasi detail bagian ini juga tersedia di [`docs/insiden-3-rollback.md`](docs/insiden-3-rollback.md).

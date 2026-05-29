@@ -5,6 +5,7 @@ metadata:
   namespace: taskflow-prod
 spec:
   replicas: 3
+  revisionHistoryLimit: 5
   strategy:
     type: RollingUpdate
     rollingUpdate:
