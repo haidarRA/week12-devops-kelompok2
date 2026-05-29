@@ -390,3 +390,45 @@ taskflow-api-89c95fd7b-hbnkn    1/1     Running       0          7s
 Insiden 3 dapat dicegah karena Kubernetes menyediakan mekanisme rollback cepat berbasis revision history. Tim tidak perlu lagi melakukan pemulihan manual di server production; cukup menjalankan `kubectl rollout undo`, lalu Kubernetes mengembalikan Deployment ke revisi sebelumnya sambil menjaga jumlah Pod tetap tersedia.
 
 Dokumentasi detail bagian ini juga tersedia di [`docs/insiden-3-rollback.md`](docs/insiden-3-rollback.md).
+
+---
+
+## Bagian 6
+### Laporan Pengujian Isolasi Namespace (Dev vs Prod)
+
+### Analisis Skenario
+Lingkungan *development* (`dev`) dan *production* (`prod`) harus terpisah secara komprehensif. Jika terjadi insiden atau kesalahan eksekusi perintah (seperti penghapusan *resource* massal) di *environment* `dev`, hal tersebut tidak boleh berdampak sedikit pun pada ketersediaan layanan di *environment* `prod`.
+
+### Solusi Kubernetes: Isolasi via Namespace
+Kubernetes menggunakan **Namespace** untuk membagi satu klaster fisik menjadi beberapa klaster virtual. Dengan mendeploy aplikasi ke namespace `taskflow-dev` dan `taskflow-prod`, *resource* (seperti Pod, Deployment, dan Service) akan sepenuhnya terisolasi secara logis.
+
+### Langkah-Langkah Pengujian
+Kami mendemonstrasikan isolasi ini dengan cara melakukan "kekacauan" yang disengaja di namespace `dev`, lalu memantau dampaknya di `prod`.
+
+#### 1. Eksekusi Penghapusan Total di Dev
+Menghapus seluruh Pod secara paksa di lingkungan *development*:
+```bash
+kubectl delete pods --all -n taskflow-dev
+```
+#### 2. Memantau Lingkungan Prod
+Pada saat yang bersamaan, kami memantau ketersediaan Pod di production secara real-time:
+```bash
+kubectl get pods -n taskflow-prod -w
+```
+### Hasil Pengujian dan Bukti
+Tepat saat perintah penghapusan dieksekusi di taskflow-dev (terminal bawah), Pod di taskflow-prod (terminal atas) sama sekali tidak mengalami gangguan, restart, atau berstatus Terminating. Semua Pod production tetap stabil berstatus Running.
+
+<img width="949" height="1150" alt="Screenshot 2026-05-29 140648" src="https://github.com/user-attachments/assets/11778662-63cb-4e1e-9b22-59020ccb0b76" />
+
+#### 3. Verifikasi Ketersediaan Layanan
+Layanan production juga dibuktikan tetap dapat diakses dengan respons HTTP 200 pasca-insiden di dev:
+```bash
+# Verifikasi akses aplikasi (via Port-Forward / Minikube IP)
+curl http://localhost:8080
+# Output: Halo dari TaskFlow API v2! Fitur Baru!
+```
+
+<img width="703" height="123" alt="Screenshot 2026-05-29 141055" src="https://github.com/user-attachments/assets/4f172747-dd60-4bcf-ab5a-0a0130bd2cf1" />
+
+#### Kesimpulan
+Fitur Namespace di Kubernetes terbukti ampuh sebagai batas isolasi. Tim developer dapat melakukan eksperimen, merusak, atau menghapus resource dengan aman di namespace taskflow-dev tanpa risiko menyebabkan downtime pada sistem taskflow-prod yang sedang diakses pengguna.
