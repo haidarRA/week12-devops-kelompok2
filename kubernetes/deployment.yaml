@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: taskflow-api
+  namespace: taskflow-prod
 spec:
-  replicas: 2
+  replicas: 3
   revisionHistoryLimit: 5
   strategy:
     type: RollingUpdate
@@ -18,9 +19,11 @@ spec:
       labels:
         app: taskflow-api
     spec:
+      imagePullSecrets:
+              - name: gitlab-registry-secret
       containers:
         - name: taskflow-api
-          image: hashicorp/http-echo:latest
+          image: registry.gitlab.com/haidarra-devops/week-9-devops-taskflow:sha-8eac58ad
           args:
             - "-text=Halo dari TaskFlow API v2! Fitur Baru!"
             - "-listen=:8080"
