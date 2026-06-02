@@ -21,9 +21,8 @@ spec:
     spec:
       containers:
         - name: taskflow-api
-          image: hashicorp/http-echo:latest
-          args:
-          - "-text=Halo dari TaskFlow API (PROD) v2! Fitur Baru!"
-          - "-listen=:8080"
+          #image: registry.gitlab.com/haidarra-devops/week-9-devops-taskflow/taskflow-api:latest
+          #image: hashicorp/http-echo:latest
+          image: REGISTRY_IMAGE_PLACEHOLDER
           ports:
             - containerPort: 8080

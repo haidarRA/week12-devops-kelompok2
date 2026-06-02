@@ -6,8 +6,11 @@ kubectl apply -f kubernetes/namespace-dev.yaml
 kubectl apply -f kubernetes/namespace-prod.yaml
 
 echo "→ Deploy ke production..."
-kubectl apply -f kubernetes/deployment.yaml -n taskflow-prod
-kubectl apply -f kubernetes/service.yaml -n taskflow-prod
+#kubectl apply -f kubernetes/deployment.yaml -n taskflow-prod
+#kubectl apply -f kubernetes/service.yaml -n taskflow-prod
+# Ubah bagian tengah deploy.sh menjadi:
+kubectl apply -f kubernetes/deployment-prod.yaml
+kubectl apply -f kubernetes/service-prod.yaml
 
 echo "→ Menunggu deployment selesai..."
 kubectl rollout status deployment/taskflow-api -n taskflow-prod
