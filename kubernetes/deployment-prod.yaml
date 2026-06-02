@@ -19,10 +19,12 @@ spec:
       labels:
         app: taskflow-api
     spec:
+      imagePullSecrets:
+              - name: gitlab-registry-secret
       containers:
         - name: taskflow-api
           #image: registry.gitlab.com/haidarra-devops/week-9-devops-taskflow/taskflow-api:latest
-          #image: hashicorp/http-echo:latest
-          image: REGISTRY_IMAGE_PLACEHOLDER
+          image: hashicorp/http-echo:latest
+          #image: REGISTRY_IMAGE_PLACEHOLDER
           ports:
             - containerPort: 8080
