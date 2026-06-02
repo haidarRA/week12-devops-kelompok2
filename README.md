@@ -432,3 +432,49 @@ curl http://localhost:8080
 
 #### Kesimpulan
 Fitur Namespace di Kubernetes terbukti ampuh sebagai batas isolasi. Tim developer dapat melakukan eksperimen, merusak, atau menghapus resource dengan aman di namespace taskflow-dev tanpa risiko menyebabkan downtime pada sistem taskflow-prod yang sedang diakses pengguna.
+
+## Bagian 7
+
+### Integrasi CI/CD Pipeline (GitLab)
+
+### Screenshot Pipeline CI/CD GitLab
+![Pipeline CI/CD sampai deploy](./Screenshot/cicd-ke-kubernetes/cicd-job-pipeline.png)
+
+Semua job (mulai dari init sampai deploy) sudah berjalan dengan lancar.
+
+### Hasil Image Baru
+
+Cara menjalankan image terbaru di GitHub:
+1. Pull repository dengan command `git pull origin main`.
+2. Apply pod baru dengan image yang baru dengan menjalankan `./deploy.sh`.
+3. Cek pod yang menggunakan image baru dengan command `kubectl get pods -n taskflow-prod`.
+4. Cek image yang digunakan oleh pod menggunakan command berikut.
+
+    ```
+    kubectl get deployment taskflow-api -n taskflow-prod -o jsonpath='{.spec.template.spec.containers[0].image}'
+    ```
+
+#### Hasil:
+
+![Hasil Run Pod dan Image yang Digunakan Pod](./Screenshot/cicd-ke-kubernetes/get-pods.png)
+
+### Diagram Alur
+
+![Flowchart CI/CD sampai Kubernetes](./Screenshot/cicd-ke-kubernetes/flowchart-cicd.png)
+
+Alur CI/CD sampai Kubernetes adalah sebagai berikut.
+1. Developer push code ke GitLab.
+2. GitLab menjalankan proses (job) mulai dari `init` sampai `deploy`.
+3. GitLab push image tag baru ke GitHub.
+4. Developer pull repository GitHub dengan image tag terbaru dan menjalankan proses deployment dengan menjalankan `deploy.sh`.
+5. Kubernetes membaca `deployment.yaml`, kemudian pull image baru dari GitLab registry dan membuat serta menjalankan pod baru dengan image terbaru.
+
+### Hasil Kubernetes Sebelum & Sesudah Pull Image Baru
+
+Sebelum:
+
+![Health Endpoint Sebelum Pull Image Baru](./Screenshot/bagian-7-health-before.png)
+
+Sesudah:
+
+![Health Endpoint Setelah Pull Image Baru](./Screenshot/bagian-7-health-after.png)
