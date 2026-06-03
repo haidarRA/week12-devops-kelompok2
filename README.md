@@ -42,20 +42,41 @@ kubectl version --client
 
 ---
 
-## Bagian 1 — Why Kubernetes?
-Masalah yang Diselesaikan
-Saat aplikasi skala besar:
+# Tugas 1 — Namespace Setup
 
-- Container crash → downtime manual
-- Traffic naik → perlu scale up manual
-- Deploy versi baru → semua user offline
+## Tujuan
+Memisahkan environment development dan production menggunakan Kubernetes Namespace.
 
-Solusi Kubernetes
+## File
+- `kubernetes/namespace-dev.yaml` — Namespace untuk environment development
+- `kubernetes/namespace-prod.yaml` — Namespace untuk environment production
 
-- ✅ Auto-restart — pod crash langsung dibuat ulang
-- ✅ Auto-scaling — scale up/down dengan 1 perintah
-- ✅ Zero-downtime deploy — rolling update
-- ✅ Rollback cepat — kembali ke versi lama dalam detik
+## Cara Menjalankan
+
+### Prasyarat
+- Kubernetes cluster berjalan (Docker Desktop / Minikube)
+- `kubectl` terinstall
+
+### Apply Namespace
+```bash
+kubectl apply -f kubernetes/namespace-dev.yaml
+kubectl apply -f kubernetes/namespace-prod.yaml
+```
+
+### Verifikasi
+```bash
+kubectl get namespaces
+```
+
+Output yang diharapkan:
+NAME            STATUS   AGE
+taskflow-dev    Active   Xs
+taskflow-prod   Active   Xs
+
+## Penjelasan
+Namespace digunakan untuk memisahkan resource Kubernetes agar environment dev dan prod tidak saling mengganggu. Jika terjadi kekacauan di `taskflow-dev`, maka `taskflow-prod` tetap berjalan normal.
+EOF
+
 
 Cara Kerja
 ```
