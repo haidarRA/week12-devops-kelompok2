@@ -77,6 +77,8 @@ taskflow-prod   Active   Xs
 Namespace digunakan untuk memisahkan resource Kubernetes agar environment dev dan prod tidak saling mengganggu. Jika terjadi kekacauan di `taskflow-dev`, maka `taskflow-prod` tetap berjalan normal.
 EOF
 
+<img width="1170" height="659" alt="IMG_1455" src="https://github.com/user-attachments/assets/0ce8f8a9-5618-4282-b233-62129acc7d4a" />
+
 
 Cara Kerja
 ```
