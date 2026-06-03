@@ -108,20 +108,23 @@ lalu akses http://localhost:8080
 
 ## **Dokumentasi**
 
-
 **Validate YAML**
+
 ![alt text](<Screenshot/Screenshot 2026-05-26 165925.png>)
 
+
 **Check Pod & Check Service**
+
 ![alt text](<Screenshot/Screenshot 2026-05-26 165708.png>)
 
 **Test Akses**
+
 ![alt text](<Screenshot/Screenshot 2026-05-26 165755.png>)
 
 **Deploy**
+
 ![alt text](<Screenshot/Screenshot 2026-05-26 165849.png>)
 
----
 
 ## Bagian 3
 ### Laporan Pengujian Insiden 1 — Self-Healing
