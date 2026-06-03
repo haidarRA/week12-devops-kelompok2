@@ -106,6 +106,23 @@ lalu akses http://localhost:8080
 
 ---
 
+## **Dokumentasi**
+
+
+**Validate YAML**
+![alt text](<Screenshot/Screenshot 2026-05-26 165925.png>)
+
+**Check Pod & Check Service**
+![alt text](<Screenshot/Screenshot 2026-05-26 165708.png>)
+
+**Test Akses**
+![alt text](<Screenshot/Screenshot 2026-05-26 165755.png>)
+
+**Deploy**
+![alt text](<Screenshot/Screenshot 2026-05-26 165849.png>)
+
+---
+
 ## Bagian 3
 ### Laporan Pengujian Insiden 1 — Self-Healing
 
@@ -126,22 +143,7 @@ kubectl delete pod taskflow-api-5c8ccc8c55-95rjv -n taskflow-prod
 <img width="1026" height="137" alt="image" src="https://github.com/user-attachments/assets/6031468e-c505-4f73-9439-88b703c99507" />
 <img width="797" height="307" alt="image" src="https://github.com/user-attachments/assets/f6942780-8b38-4ab5-a6bd-8d8a57250e6d" />
 
-## **Dokumentasi**
 
-
-**Validate YAML**
-![alt text](<Screenshot/Screenshot 2026-05-26 165925.png>)
-
-**Check Pod & Check Service**
-![alt text](<Screenshot/Screenshot 2026-05-26 165708.png>)
-
-**Test Akses**
-![alt text](<Screenshot/Screenshot 2026-05-26 165755.png>)
-
-**Deploy**
-![alt text](<Screenshot/Screenshot 2026-05-26 165849.png>)
-
----
 
 ## Bagian 4
 ### Analisis Masalah Lama (Insiden 2)
