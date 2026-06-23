@@ -23,7 +23,7 @@ spec:
               - name: gitlab-registry-secret
       containers:
         - name: taskflow-api
-          image: registry.gitlab.com/haidarra-devops/week-9-devops-taskflow:sha-430e8c35
+          image: registry.gitlab.com/haidarra-devops/week-9-devops-taskflow:sha-8561d665
           args:
             - "-text=Halo dari TaskFlow API v2! Fitur Baru!"
             - "-listen=:8080"
